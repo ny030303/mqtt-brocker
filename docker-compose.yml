@@ -1,0 +1,26 @@
+version: '3'
+services:
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    container_name: ipfs_node
+    ports:
+      - "4001:4001"   # libp2p 통신 포트
+      - "5001:5001"   # API 포트
+      - "8080:8080"   # 게이트웨이 포트
+    volumes:
+      - ./ipfs_data:/data/ipfs
+    restart: always
+
+  uploader:
+    build:
+      context: ./uploader
+    container_name: nft_uploader
+    environment:
+      # 환경변수는 .env 파일이나 호스트 환경에서 설정 가능
+      - NFT_STORAGE_API_KEY=${NFT_STORAGE_API_KEY}
+      - FILE_PATH=${FILE_PATH}
+    depends_on:
+      - ipfs
+    volumes:
+      - ./uploader:/app
+    command: python /app/upload_to_nft_storage.py
