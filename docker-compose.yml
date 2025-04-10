@@ -7,20 +7,26 @@ services:
       - "4001:4001"   # libp2p 통신 포트
       - "5001:5001"   # API 포트
       - "8080:8080"   # 게이트웨이 포트
+    networks:
+      - ipfs_net
     volumes:
       - ./ipfs_data:/data/ipfs
     restart: always
 
   uploader:
-    build:
-      context: ./uploader
-    container_name: nft_uploader
-    environment:
-      # 환경변수는 .env 파일이나 호스트 환경에서 설정 가능
-      - NFT_STORAGE_API_KEY=${NFT_STORAGE_API_KEY}
-      - FILE_PATH=${FILE_PATH}
+    build: ./uploader
+    container_name: pinata_uploader
     depends_on:
       - ipfs
+    networks:
+      - ipfs_net
+    environment:
+      - PINATA_JWT=${PINATA_JWT}
+      - FILE_PATH=${FILE_PATH}
     volumes:
       - ./uploader:/app
-    command: python /app/upload_to_nft_storage.py
+      - ./uploader/test_file.png:/app/test_file.png
+    command: python /app/upload_to_pinata.py
+
+networks:
+  ipfs_net:
