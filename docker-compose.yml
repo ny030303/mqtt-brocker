@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ipfs:
     image: ipfs/go-ipfs:latest
@@ -7,7 +5,7 @@ services:
     ports:
       - "4001:4001"   # libp2p 통신 포트
       - "5001:5001"   # API 포트
-      - "8080:8080"   # 게이트웨이 포트
+      - "9090:8080"   # 게이트웨이 포트
     networks:
       - ipfs_net
     volumes:
@@ -15,7 +13,7 @@ services:
     restart: always
 
   uploader:
-    build: ./uploader
+    build: ./ipfs_uploader
     container_name: pinata_uploader
     depends_on:
       - ipfs
@@ -25,30 +23,22 @@ services:
       - PINATA_JWT=${PINATA_JWT}
       - FILE_PATH=/app/shared/${FILENAME}
     volumes:
-      - ./uploader:/app
+      - ./ipfs_uploader:/app
       - /home/ubuntu/Desktop/shared:/app/shared
     command: >
       bash -c "python /app/upload_to_pinata.py && echo Done > /app/shared/status.txt"
 
-  jupyter_gpu:
-    image: jupyter/tensorflow-notebook:latest  # GPU 지원 주피터 이미지 사용
-    container_name: jupyter_gpu
-    runtime: nvidia  # GPU 사용을 위한 설정 (NVIDIA Container Toolkit 필요)
+  jupyter:
+    image: ny-pytorch
+    runtime: nvidia
     ports:
-      - "8888:8888"  # 주피터 노트북 기본 포트
+      - "8888:8888"
     volumes:
-      - ./jupyter:/home/jovyan/work  # 별도의 폴더(예: ./jupyter)를 마운트
-    environment:
-      - JUPYTER_ENABLE_LAB=yes  # JupyterLab 환경으로 실행하려면 설정
+      - ./jupyter:/workspace
+    command: >
+      jupyter notebook
+      --ip=0.0.0.0
+      --allow-root      
     restart: unless-stopped
-    # deploy 섹션은 Swarm 모드에서 사용 가능하므로, 일반 docker-compose에서는 runtime 설정이 주요함
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
-
 networks:
   ipfs_net:
